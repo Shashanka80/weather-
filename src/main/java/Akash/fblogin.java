@@ -9,6 +9,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
 
 public class fblogin {
 	public static void main(String[] args) {
+		//this code is to run different version of chrome browser
 		ChromeOptions option= new ChromeOptions();
 		option.addArguments("--remote-allow-origins=*");
 		
