@@ -1,104 +1,115 @@
 package Nimesa;
-import java.util.Scanner;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class WeatherApp {
+
     private static final String API_URL = "https://samples.openweathermap.org/data/2.5/forecast/hourly?q=London,us&appid=b6907d289e10d714a6e88b30761fae22";
 
-    private static WebDriver driver;
-
     public static void main(String[] args) {
-        System.setProperty("webdriver.chrome.driver", "path/to/chromedriver");
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments("--headless"); // Uncomment this line if you don't want to see the browser window
         try {
-            driver.get("https://samples.openweathermap.org/data/2.5/forecast/hourly?q=London,us&appid=b6907d289e10d714a6e88b30761fae22"); // Replace with the URL containing JSON data
+            while (true) {
+                System.out.println("\n1. Get weather\n2. Get Wind Speed\n3. Get Pressure\n0. Exit");
+                System.out.print("Enter your choice: ");
+                int option = readInt();
 
-            // Fetch JSON data from a web element (example: div element with id "json_data")
-            String jsonData = driver.findElement(By.id("json_data")).getText();
-
-            // Use Jackson ObjectMapper to parse JSON data
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode jsonNode = objectMapper.readTree(jsonData);
-}
-        driver = new ChromeDriver(options);
-        driver.get(API_URL);
-
-        Scanner scanner = new Scanner(System.in);
-        int choice;
-
-        do {
-            System.out.println("\nChoose an option:");
-            System.out.println("1. Get weather");
-            System.out.println("2. Get Wind Speed");
-            System.out.println("3. Get Pressure");
-            System.out.println("0. Exit");
-            System.out.print("Enter your choice: ");
-            choice = scanner.nextInt();
-
-            switch (choice) {
-                case 1:
-                    getWeather();
+                if (option == 1) {
+                    System.out.print("Enter the date (YYYY-MM-DD): ");
+                    String date = readString();
+                    getWeatherData(date);
+                } else if (option == 2) {
+                    System.out.print("Enter the date (YYYY-MM-DD): ");
+                    String date = readString();
+                    getWindSpeedData(date);
+                } else if (option == 3) {
+                    System.out.print("Enter the date (YYYY-MM-DD): ");
+                    String date = readString();
+                    getPressureData(date);
+                } else if (option == 0) {
+                    System.out.println("Terminating the program.");
                     break;
-                case 2:
-                    getWindSpeed();
-                    break;
-                case 3:
-                    getPressure(choice);
-                    break;
-                case 0:
-                    break;
-                default:
+                } else {
                     System.out.println("Invalid option. Please try again.");
+                }
             }
-        } while (choice != 0);
-
-        driver.quit();
-        scanner.close();
+        } catch (IOException e) {
+            System.err.println("Error fetching weather data: " + e.getMessage());
+        }
     }
 
-    private static void getWeather() {
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter the date (YYYY-MM-DD HH:MM:SS): ");
-        String date = scanner.nextLine();
-
-        String jsonString = driver.findElement(By.tagName("body")).getText();
-        // Use any JSON parsing library to extract the temperature for the specified date
-        // For simplicity, let's assume we are using a library named "json-parser"
-        double temperature = jsonParser.extractTemperature(jsonString, date);
-
-        System.out.println(String.format("Temperature on %s: %.2f Kelvin", date, temperature));
+    private static void getWeatherData(String date) throws IOException {
+        String jsonData = fetchJsonData(API_URL);
+        JSONObject jsonObject = new JSONObject(jsonData);
+        JSONArray list = jsonObject.getJSONArray("list");
+        for (int i = 0; i < list.length(); i++) {
+            JSONObject entry = list.getJSONObject(i);
+            if (entry.getString("dt_txt").contains(date)) {
+                double temperature = entry.getJSONObject("main").getDouble("temp");
+                System.out.printf("Temperature on %s: %.2f°C\n", date, temperature);
+                return;
+            }
+        }
+        System.out.println("No weather data available for the given date.");
     }
 
-    private static void getWindSpeed() {
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter the date (YYYY-MM-DD HH:MM:SS): ");
-        String date = scanner.nextLine();
-
-        String jsonString = driver.findElement(By.tagName("body")).getText();
-        // Use any JSON parsing library to extract the wind speed for the specified date
-        // For simplicity, let's assume we are using a library named "json-parser"
-        double windSpeed = jsonParser.extractWindSpeed(jsonString, date);
-
-        System.out.println(String.format("Wind Speed on %s: %.2f m/s", date, windSpeed));
+    private static void getWindSpeedData(String date) throws IOException {
+        String jsonData = fetchJsonData(API_URL);
+        JSONObject jsonObject = new JSONObject(jsonData);
+        JSONArray list = jsonObject.getJSONArray("list");
+        for (int i = 0; i < list.length(); i++) {
+            JSONObject entry = list.getJSONObject(i);
+            if (entry.getString("dt_txt").contains(date)) {
+                double windSpeed = entry.getJSONObject("wind").getDouble("speed");
+                System.out.printf("Wind Speed on %s: %.2f m/s\n", date, windSpeed);
+                return;
+            }
+        }
+        System.out.println("No weather data available for the given date.");
     }
 
-    private static void getPressure(Object jsonParser) {
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter the date (YYYY-MM-DD HH:MM:SS): ");
-        String date = scanner.nextLine();
+    private static void getPressureData(String date) throws IOException {
+        String jsonData = fetchJsonData(API_URL);
+        JSONObject jsonObject = new JSONObject(jsonData);
+        JSONArray list = jsonObject.getJSONArray("list");
+        for (int i = 0; i < list.length(); i++) {
+            JSONObject entry = list.getJSONObject(i);
+            if (entry.getString("dt_txt").contains(date)) {
+                double pressure = entry.getJSONObject("main").getDouble("pressure");
+                System.out.printf("Pressure on %s: %.2f hPa\n", date, pressure);
+                return;
+            }
+        }
+        System.out.println("No weather data available for the given date.");
+    }
 
-        String jsonString = driver.findElement(By.tagName("body")).getText();
-        // Use any JSON parsing library to extract the pressure for the specified date
-        // For simplicity, let's assume we are using a library named "json-parser"
-        double pressure = jsonParser.extractPressure(jsonString, date);
+    private static String fetchJsonData(String apiUrl) throws IOException {
+        URL url = new URL(apiUrl);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
 
-        System.out.println(String.format("Pressure on %s: %.2f hPa", date, pressure));
+        StringBuilder response = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+        }
+        connection.disconnect();
+        return response.toString();
+    }
+
+    private static int readInt() throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        return Integer.parseInt(reader.readLine());
+    }
+
+    private static String readString() throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        return reader.readLine();
     }
 }
